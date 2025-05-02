@@ -5,12 +5,16 @@ import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 import * as SeparatorPrimitive from "@radix-ui/react-separator";
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
+import * as TooltipPrimitive from "@radix-ui/react-tooltip";
+import * as ToastPrimitive from "@radix-ui/react-toast";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { cva, type VariantProps } from "class-variance-authority";
 import { create } from "zustand";
 import { v4 as uuidv4 } from "uuid";
 import { formatDistanceToNow } from "date-fns";
+import { useTheme } from "next-themes";
+import { Toaster as SonnerToaster } from "sonner";
 import {
   Trash2,
   FileText,
@@ -90,6 +94,217 @@ interface GraphData {
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+// Toast components
+// Toast hook implementation
+type ToastProps = React.ComponentPropsWithoutRef<typeof ToastPrimitive.Root>;
+
+type ToastActionElement = React.ReactElement<typeof ToastPrimitive.Action>;
+
+const toastVariants = cva(
+  "group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full",
+  {
+    variants: {
+      variant: {
+        default: "border bg-background text-foreground",
+        destructive:
+          "destructive group border-destructive bg-destructive text-destructive-foreground",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+);
+
+const Toast = React.forwardRef<
+  React.ElementRef<typeof ToastPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof ToastPrimitive.Root> & {
+    variant?: "default" | "destructive";
+  }
+>(({ className, variant, ...props }, ref) => {
+  return (
+    <ToastPrimitive.Root
+      ref={ref}
+      className={cn(toastVariants({ variant }), className)}
+      {...props}
+    />
+  );
+});
+Toast.displayName = ToastPrimitive.Root.displayName;
+
+const ToastAction = React.forwardRef<
+  React.ElementRef<typeof ToastPrimitive.Action>,
+  React.ComponentPropsWithoutRef<typeof ToastPrimitive.Action>
+>(({ className, ...props }, ref) => (
+  <ToastPrimitive.Action
+    ref={ref}
+    className={cn(
+      "inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 group-[.destructive]:border-muted/40 group-[.destructive]:hover:border-destructive/30 group-[.destructive]:hover:bg-destructive group-[.destructive]:hover:text-destructive-foreground group-[.destructive]:focus:ring-destructive",
+      className
+    )}
+    {...props}
+  />
+));
+ToastAction.displayName = ToastPrimitive.Action.displayName;
+
+const ToastClose = React.forwardRef<
+  React.ElementRef<typeof ToastPrimitive.Close>,
+  React.ComponentPropsWithoutRef<typeof ToastPrimitive.Close>
+>(({ className, ...props }, ref) => (
+  <ToastPrimitive.Close
+    ref={ref}
+    className={cn(
+      "absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600",
+      className
+    )}
+    toast-close=""
+    {...props}
+  />
+));
+ToastClose.displayName = ToastPrimitive.Close.displayName;
+
+const ToastTitle = React.forwardRef<
+  React.ElementRef<typeof ToastPrimitive.Title>,
+  React.ComponentPropsWithoutRef<typeof ToastPrimitive.Title>
+>(({ className, ...props }, ref) => (
+  <ToastPrimitive.Title
+    ref={ref}
+    className={cn("text-sm font-semibold", className)}
+    {...props}
+  />
+));
+ToastTitle.displayName = ToastPrimitive.Title.displayName;
+
+const ToastDescription = React.forwardRef<
+  React.ElementRef<typeof ToastPrimitive.Description>,
+  React.ComponentPropsWithoutRef<typeof ToastPrimitive.Description>
+>(({ className, ...props }, ref) => (
+  <ToastPrimitive.Description
+    ref={ref}
+    className={cn("text-sm opacity-90", className)}
+    {...props}
+  />
+));
+ToastDescription.displayName = ToastPrimitive.Description.displayName;
+
+type ToastProviderProps = React.ComponentPropsWithoutRef<
+  typeof ToastPrimitive.Provider
+>;
+
+const ToastProvider = ({ ...props }: ToastProviderProps) => {
+  return <ToastPrimitive.Provider {...props} />;
+};
+
+const ToastViewport = React.forwardRef<
+  React.ElementRef<typeof ToastPrimitive.Viewport>,
+  React.ComponentPropsWithoutRef<typeof ToastPrimitive.Viewport>
+>(({ className, ...props }, ref) => (
+  <ToastPrimitive.Viewport
+    ref={ref}
+    className={cn(
+      "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
+      className
+    )}
+    {...props}
+  />
+));
+ToastViewport.displayName = ToastPrimitive.Viewport.displayName;
+
+// Toast hook
+interface ToastState {
+  toasts: Array<{
+    id: string;
+    title?: React.ReactNode;
+    description?: React.ReactNode;
+    action?: ToastActionElement;
+    variant: "default" | "destructive";
+  }>;
+}
+
+const createToastStore = (initialState: ToastState) => {
+  return create<ToastState>()(() => initialState);
+};
+
+const useToast = createToastStore({
+  toasts: [],
+});
+
+// Toaster component
+function CustomToaster() {
+  const { toasts } = useToast();
+
+  return (
+    <ToastProvider>
+      {toasts.map(function ({ id, title, description, action, ...props }) {
+        return (
+          <Toast key={id} {...props}>
+            <div className="grid gap-1">
+              {title && <ToastTitle>{title}</ToastTitle>}
+              {description && (
+                <ToastDescription>{description}</ToastDescription>
+              )}
+            </div>
+            {action}
+            <ToastClose />
+          </Toast>
+        );
+      })}
+      <ToastViewport />
+    </ToastProvider>
+  );
+}
+
+// Sonner Toaster component
+type SonnerToasterProps = React.ComponentProps<typeof SonnerToaster>;
+
+const SonnerWrapper = ({ ...props }: SonnerToasterProps) => {
+  // In a real implementation, we'd use useTheme(), but for simplicity
+  // we'll just use a default theme
+  const theme = "light";
+
+  return (
+    <SonnerToaster
+      theme={theme as SonnerToasterProps["theme"]}
+      className="toaster group"
+      toastOptions={{
+        classNames: {
+          toast:
+            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
+          description: "group-[.toast]:text-muted-foreground",
+          actionButton:
+            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
+          cancelButton:
+            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+        },
+      }}
+      {...props}
+    />
+  );
+};
+
+// Tooltip Provider component
+const TooltipProvider = TooltipPrimitive.Provider;
+
+// Tooltip components
+const Tooltip = TooltipPrimitive.Root;
+const TooltipTrigger = TooltipPrimitive.Trigger;
+
+const TooltipContent = React.forwardRef<
+  React.ElementRef<typeof TooltipPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
+>(({ className, sideOffset = 4, ...props }, ref) => (
+  <TooltipPrimitive.Content
+    ref={ref}
+    sideOffset={sideOffset}
+    className={cn(
+      "z-50 overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+      className
+    )}
+    {...props}
+  />
+));
+TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 
 // UI Component Implementations
 
@@ -1359,42 +1574,55 @@ const Index: React.FC = () => {
   }, [generateGraphData]);
 
   return (
-    <div className="h-screen flex flex-col">
-      <div className="flex-1 flex overflow-hidden">
-        <div className="w-64 h-full border-r">
-          <Sidebar />
-        </div>
+    <TooltipProvider>
+      <CustomToaster />
+      <SonnerWrapper />
+      <div className="h-screen flex flex-col">
+        <div className="flex-1 flex overflow-hidden">
+          <div className="w-64 h-full border-r">
+            <Sidebar />
+          </div>
 
-        <div className="flex-1 h-full flex flex-col">
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="flex flex-col h-full"
-          >
-            <div className="border-b px-4 py-2">
-              <TabsList>
-                <TabsTrigger value="editor" className="flex items-center gap-2">
-                  <Pencil className="h-4 w-4" />
-                  Editor
-                </TabsTrigger>
-                <TabsTrigger value="graph" className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Graph
-                </TabsTrigger>
-              </TabsList>
-            </div>
+          <div className="flex-1 h-full flex flex-col">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="flex flex-col h-full"
+            >
+              <div className="border-b px-4 py-2">
+                <TabsList>
+                  <TabsTrigger
+                    value="editor"
+                    className="flex items-center gap-2"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Editor
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="graph"
+                    className="flex items-center gap-2"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Graph
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
-            <TabsContent value="editor" className="flex-1 overflow-hidden m-0">
-              <NoteEditor />
-            </TabsContent>
+              <TabsContent
+                value="editor"
+                className="flex-1 overflow-hidden m-0"
+              >
+                <NoteEditor />
+              </TabsContent>
 
-            <TabsContent value="graph" className="flex-1 overflow-hidden m-0">
-              <GraphVisualizer />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="graph" className="flex-1 overflow-hidden m-0">
+                <GraphVisualizer />
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 };
 
