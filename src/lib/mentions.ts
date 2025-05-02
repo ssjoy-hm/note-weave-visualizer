@@ -18,31 +18,18 @@ export function findMentions(content: string): string[] {
 
 /**
  * Replace mentions in a note's content with links
+ * Note: This function only works in .tsx files, so we return a string-based format
  */
 export function replaceMentionsWithLinks(
   content: string, 
   onClick: (title: string) => void
-): React.ReactNode[] {
-  const parts = content.split(/(\[\[.*?\]\])/g);
-  
-  return parts.map((part, index) => {
-    const mentionMatch = part.match(/^\[\[(.*?)\]\]$/);
-    
-    if (mentionMatch) {
-      const title = mentionMatch[1];
-      return (
-        <span 
-          key={index}
-          className="note-link"
-          onClick={() => onClick(title)}
-        >
-          {title}
-        </span>
-      );
-    }
-    
-    return <span key={index}>{part}</span>;
-  });
+): string {
+  // Since we can't return JSX elements from a .ts file,
+  // we'll return the processed HTML as a string
+  return content.replace(
+    /\[\[(.*?)\]\]/g,
+    (match, title) => `<span class="note-link" data-title="${title}">${title}</span>`
+  );
 }
 
 /**
