@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverAnchor } from '@/components/ui/popover';
+import { Popover, PopoverContent } from '@/components/ui/popover';
 import { 
   Check, 
   Trash2 
@@ -235,7 +235,7 @@ const NoteEditor: React.FC = () => {
           </div>
 
           <Popover open={showMentionPopover} onOpenChange={setShowMentionPopover}>
-            <PopoverAnchor asChild>
+            <div className="relative">
               <Textarea
                 ref={textareaRef}
                 value={editedContent}
@@ -243,28 +243,32 @@ const NoteEditor: React.FC = () => {
                 className="min-h-[60vh] font-mono text-sm resize-none border-muted"
                 placeholder="Start writing your note..."
               />
-            </PopoverAnchor>
-            <PopoverContent className="w-64 p-0" align="start">
-              <Command>
-                <CommandInput placeholder="Search notes..." value={mentionQuery} onValueChange={setMentionQuery} />
-                <CommandList>
-                  <CommandEmpty>No notes found</CommandEmpty>
-                  <CommandGroup>
-                    {filteredNotes.map((note) => (
-                      <CommandItem 
-                        key={note.id} 
-                        onSelect={() => handleSelectMention(note.title)}
-                      >
-                        <span>{note.title}</span>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
+              
+              {showMentionPopover && (
+                <div className="absolute z-50" style={{ top: 24 }}>
+                  <PopoverContent className="w-64 p-0" forceMount>
+                    <Command>
+                      <CommandInput placeholder="Search notes..." value={mentionQuery} onValueChange={setMentionQuery} />
+                      <CommandList>
+                        <CommandEmpty>No notes found</CommandEmpty>
+                        <CommandGroup>
+                          {filteredNotes.map((note) => (
+                            <CommandItem 
+                              key={note.id} 
+                              onSelect={() => handleSelectMention(note.title)}
+                            >
+                              <span>{note.title}</span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </div>
+              )}
+            </div>
+            <BacklinksList noteId={activeNote.id} onLinkClick={handleNoteNavigation} />
           </Popover>
-
-          <BacklinksList noteId={activeNote.id} onLinkClick={handleNoteNavigation} />
         </div>
       </ScrollArea>
     </div>
