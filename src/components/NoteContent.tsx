@@ -2,7 +2,7 @@
 import React from 'react';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
-import { replaceMentionsWithLinks } from '@/lib/mentions';
+import { parseMarkdownWithLinks } from '@/lib/mentions';
 
 interface NoteContentProps {
   content: string;
