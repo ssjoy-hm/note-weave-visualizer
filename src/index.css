@@ -14,7 +14,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 246 100% 42%;
+    --primary: 250 95% 60%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -31,18 +31,18 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 246 100% 42%;
+    --ring: 250 95% 60%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     --sidebar-background: 246 30% 97%;
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 246 100% 42%;
+    --sidebar-primary: 250 95% 60%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 246 30% 94%;
+    --sidebar-accent: 250 30% 94%;
     --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 246 30% 90%;
-    --sidebar-ring: 246 100% 60%;
+    --sidebar-border: 250 30% 90%;
+    --sidebar-ring: 250 95% 60%;
   }
 
   .dark {
@@ -55,7 +55,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 246 70% 70%;
+    --primary: 250 80% 70%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -72,16 +72,16 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 246 70% 70%;
+    --ring: 250 80% 70%;
     
     --sidebar-background: 222.2 47.4% 11.2%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 246 70% 70%;
+    --sidebar-primary: 250 80% 70%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 222.2 47.4% 15%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 222.2 47.4% 18%;
-    --sidebar-ring: 246 70% 70%;
+    --sidebar-ring: 250 80% 70%;
   }
 }
 
@@ -120,19 +120,19 @@
   }
 
   .markdown blockquote {
-    @apply border-l-4 border-noteweave-300 pl-4 italic my-4;
+    @apply border-l-4 border-primary/30 pl-4 italic my-4;
   }
 
   .markdown pre {
-    @apply bg-gray-100 dark:bg-gray-800 p-4 rounded mb-4 overflow-x-auto;
+    @apply bg-gray-100 dark:bg-gray-800 p-4 rounded-lg mb-4 overflow-x-auto shadow-inner;
   }
 
   .markdown code {
-    @apply bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded;
+    @apply bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded font-mono text-sm;
   }
 
   .markdown a {
-    @apply text-noteweave-600 hover:text-noteweave-800 dark:text-noteweave-400 dark:hover:text-noteweave-300 underline;
+    @apply text-primary hover:text-primary/80 dark:text-primary dark:hover:text-primary/80 underline underline-offset-2;
   }
 
   .markdown table {
@@ -140,16 +140,16 @@
   }
 
   .markdown th, .markdown td {
-    @apply border border-gray-300 dark:border-gray-700 p-2;
+    @apply border border-border p-2;
   }
 
   .markdown th {
-    @apply bg-gray-100 dark:bg-gray-800;
+    @apply bg-muted dark:bg-muted/50;
   }
 
   /* Note link styling */
   .note-link {
-    @apply bg-noteweave-100 dark:bg-noteweave-900 text-noteweave-700 dark:text-noteweave-300 rounded px-1 py-0.5 hover:bg-noteweave-200 dark:hover:bg-noteweave-800 transition-colors cursor-pointer;
+    @apply bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary/90 rounded px-1 py-0.5 hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors cursor-pointer font-medium;
   }
 
   /* Flow chart styling */
@@ -162,6 +162,43 @@
   }
 
   .flow-node.selected {
-    @apply border-noteweave-500 shadow-lg;
+    @apply border-primary shadow-lg;
   }
+}
+
+/* Custom animations */
+@keyframes soft-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-soft-fade-in {
+  animation: soft-fade-in 0.3s ease-out forwards;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.3);
 }

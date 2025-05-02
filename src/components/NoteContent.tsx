@@ -39,7 +39,13 @@ const NoteContent: React.FC<NoteContentProps> = ({ content, onLinkClick }) => {
   }, [content, onLinkClick]);
 
   // Convert markdown to HTML
-  const rawHTML = marked.parse(content, { breaks: true });
+  let rawHTML = '';
+  try {
+    rawHTML = marked.parse(content, { breaks: true });
+  } catch (error) {
+    rawHTML = content;
+    console.error('Error parsing markdown:', error);
+  }
   
   // Process HTML with DOMPurify
   const sanitizedHTML = DOMPurify.sanitize(rawHTML);

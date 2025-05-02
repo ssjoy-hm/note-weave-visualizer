@@ -4,10 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
-import { Popover, PopoverContent } from '@/components/ui/popover';
 import { 
-  Check, 
   Trash2 
 } from 'lucide-react';
 import useNoteStore from '@/store/noteStore';
@@ -31,11 +28,7 @@ const NoteEditor: React.FC = () => {
   const { notes, activeNoteId, updateNote, deleteNote, setActiveNote } = useNoteStore();
   const [editedContent, setEditedContent] = useState<string>('');
   const [editedTitle, setEditedTitle] = useState<string>('');
-  const [mentionQuery, setMentionQuery] = useState<string>('');
-  const [showMentionPopover, setShowMentionPopover] = useState<boolean>(false);
-  const [mentionStartPos, setMentionStartPos] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const textAreaSelectionRef = useRef<{ start: number, end: number } | null>(null);
 
   const activeNote = notes.find((note) => note.id === activeNoteId);
 
@@ -83,34 +76,6 @@ const NoteEditor: React.FC = () => {
     }
   };
 
-  // Handle input change and detect mention trigger
-  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newContent = e.target.value;
-    setEditedContent(newContent);
-
-    // Store current selection
-    if (textareaRef.current) {
-      textAreaSelectionRef.current = {
-        start: textareaRef.current.selectionStart,
-        end: textareaRef.current.selectionEnd
-      };
-    }
-
-    // Check for @ character
-    const cursorPosition = e.target.selectionStart;
-    const textBeforeCursor = newContent.substring(0, cursorPosition);
-    const atIndex = textBeforeCursor.lastIndexOf('@');
-
-    if (atIndex !== -1 && (atIndex === 0 || /\s/.test(textBeforeCursor[atIndex - 1]))) {
-      // Found @ symbol preceded by whitespace or at beginning
-      setShowMentionPopover(true);
-      setMentionStartPos(atIndex);
-      setMentionQuery(textBeforeCursor.substring(atIndex + 1));
-    } else {
-      setShowMentionPopover(false);
-    }
-  };
-
   // Auto-save when user stops typing
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -121,41 +86,6 @@ const NoteEditor: React.FC = () => {
 
     return () => clearTimeout(timer);
   }, [editedContent, editedTitle]);
-
-  // Filter notes for mention suggestions
-  const filteredNotes = notes
-    .filter(note => 
-      note.title.toLowerCase().includes(mentionQuery.toLowerCase()) && 
-      note.id !== activeNoteId
-    )
-    .slice(0, 5);
-
-  // Handle selection of a mention
-  const handleSelectMention = (noteTitle: string) => {
-    if (mentionStartPos !== null && textareaRef.current) {
-      const beforeMention = editedContent.substring(0, mentionStartPos);
-      const afterMention = editedContent.substring(textAreaSelectionRef.current?.start || 0);
-      
-      // Replace @ with [[ ]]
-      const newContent = `${beforeMention}[[${noteTitle}]]${afterMention}`;
-      setEditedContent(newContent);
-      
-      // Reset mention state
-      setShowMentionPopover(false);
-      setMentionQuery('');
-      
-      // Move cursor after the inserted mention
-      const newCursorPos = mentionStartPos + noteTitle.length + 4; // 4 for the [[ and ]]
-      
-      // Focus back on textarea and set cursor position
-      setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.focus();
-          textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
-        }
-      }, 0);
-    }
-  };
 
   if (!activeNote) {
     return (
@@ -175,18 +105,18 @@ const NoteEditor: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="border-b p-4">
+      <div className="border-b p-4 bg-gradient-to-r from-secondary/80 to-background">
         <div className="flex items-center justify-between">
           <Input
             value={editedTitle}
             onChange={(e) => setEditedTitle(e.target.value)}
-            className="text-xl font-semibold border-0 px-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="text-xl font-semibold border-0 px-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
             onBlur={handleSaveChanges}
           />
           
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" className="hover:bg-destructive/10">
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             </AlertDialogTrigger>
@@ -226,49 +156,24 @@ const NoteEditor: React.FC = () => {
         )}
       </div>
 
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 p-4 bg-gradient-to-b from-background to-secondary/10">
         <div className="pb-12 relative">
           <div className="bg-secondary/30 rounded-md p-3 mb-4 text-sm">
-            <p className="font-medium">Mentioning notes:</p>
-            <p>Type <code className="bg-muted px-1 rounded">@</code> to mention other notes. Select a note from the dropdown to create a link.</p>
-            <p>You can also manually type <code className="bg-muted px-1 rounded">[[Note Title]]</code> to link to another note.</p>
+            <p className="font-medium">Creating Links:</p>
+            <p>Type <code className="bg-muted px-1 rounded">[[Note Title]]</code> to link to another note.</p>
           </div>
 
-          <Popover open={showMentionPopover} onOpenChange={setShowMentionPopover}>
-            <div className="relative">
-              <Textarea
-                ref={textareaRef}
-                value={editedContent}
-                onChange={handleContentChange}
-                className="min-h-[60vh] font-mono text-sm resize-none border-muted"
-                placeholder="Start writing your note..."
-              />
-              
-              {showMentionPopover && (
-                <div className="absolute z-50" style={{ top: 24 }}>
-                  <PopoverContent className="w-64 p-0" forceMount>
-                    <Command>
-                      <CommandInput placeholder="Search notes..." value={mentionQuery} onValueChange={setMentionQuery} />
-                      <CommandList>
-                        <CommandEmpty>No notes found</CommandEmpty>
-                        <CommandGroup>
-                          {filteredNotes.map((note) => (
-                            <CommandItem 
-                              key={note.id} 
-                              onSelect={() => handleSelectMention(note.title)}
-                            >
-                              <span>{note.title}</span>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </div>
-              )}
-            </div>
-            <BacklinksList noteId={activeNote.id} onLinkClick={handleNoteNavigation} />
-          </Popover>
+          <div className="relative">
+            <Textarea
+              ref={textareaRef}
+              value={editedContent}
+              onChange={(e) => setEditedContent(e.target.value)}
+              className="min-h-[60vh] font-mono text-sm resize-none border-muted rounded-lg shadow-inner bg-white/80 dark:bg-gray-800/80"
+              placeholder="Start writing your note..."
+            />
+          </div>
+          
+          <BacklinksList noteId={activeNote.id} onLinkClick={handleNoteNavigation} />
         </div>
       </ScrollArea>
     </div>
