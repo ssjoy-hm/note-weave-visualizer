@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { parseMarkdownWithLinks } from '@/lib/mentions';
@@ -11,33 +11,41 @@ interface NoteContentProps {
 
 const NoteContent: React.FC<NoteContentProps> = ({ content, onLinkClick }) => {
   // For server-side rendering support, we check if window is defined
-  if (typeof window !== 'undefined') {
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     // Add event listener for note links when the DOM is ready
-    DOMPurify.addHook('afterSanitizeAttributes', function (node) {
-      if (node.dataset && node.dataset.title) {
-        node.addEventListener('click', () => {
-          onLinkClick(node.dataset.title || '');
-        });
-      }
-    });
-  }
+    const handleNoteLinks = () => {
+      document.querySelectorAll('.note-link').forEach((element) => {
+        if (element instanceof HTMLElement && element.dataset.title) {
+          element.addEventListener('click', () => {
+            onLinkClick(element.dataset.title || '');
+          });
+        }
+      });
+    };
+
+    // Execute after the component renders
+    handleNoteLinks();
+
+    // Clean up on unmount
+    return () => {
+      document.querySelectorAll('.note-link').forEach((element) => {
+        if (element instanceof HTMLElement) {
+          element.replaceWith(element.cloneNode(true));
+        }
+      });
+    };
+  }, [content, onLinkClick]);
 
   // Convert markdown to HTML
-  const rawHTML = marked(content, { breaks: true });
+  const rawHTML = marked.parse(content, { breaks: true });
   
   // Process HTML with DOMPurify
   const sanitizedHTML = DOMPurify.sanitize(rawHTML);
   
   // Replace mentions with interactive links
-  // Since this is a complex operation involving React elements,
-  // we'll use dangerouslySetInnerHTML for the markdown conversion
-  // and then handle mentions through the DOM
-  
-  // Format the content for rendering
-  const processedHtml = sanitizedHTML.replace(
-    /\[\[(.*?)\]\]/g,
-    (match, title) => `<span class="note-link" data-title="${title}">${title}</span>`
-  );
+  const processedHtml = parseMarkdownWithLinks(sanitizedHTML, onLinkClick);
 
   return (
     <div 
