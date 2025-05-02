@@ -76,8 +76,11 @@ const NoteGraph: React.FC<NoteGraphProps> = ({ onNodeClick }) => {
   );
 
   const handleNodeClick = (_: React.MouseEvent, node: Node) => {
-    const noteId = node.data.noteId;
-    onNodeClick(noteId);
+    // Fix the type issue by explicitly checking for the noteId property
+    if (node.data && typeof node.data.noteId === 'string') {
+      const noteId = node.data.noteId;
+      onNodeClick(noteId);
+    }
   };
 
   useEffect(() => {

@@ -38,10 +38,12 @@ const NoteContent: React.FC<NoteContentProps> = ({ content, onLinkClick }) => {
     };
   }, [content, onLinkClick]);
 
-  // Convert markdown to HTML
+  // Convert markdown to HTML - Fix the Promise<string> issue
   let rawHTML = '';
   try {
-    rawHTML = marked.parse(content, { breaks: true });
+    // Use markdownString option to ensure synchronous parsing
+    const options = { breaks: true, async: false };
+    rawHTML = marked.parse(content, options) as string;
   } catch (error) {
     rawHTML = content;
     console.error('Error parsing markdown:', error);
